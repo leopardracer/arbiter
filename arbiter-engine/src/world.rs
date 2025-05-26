@@ -1,11 +1,8 @@
 //! The world module contains the core world abstraction for the Arbiter Engine.
 
-use std::collections::VecDeque;
+// TODO: I think the DB needs to have a transaction layer associated to it actually.
 
-use arbiter_core::{database::ArbiterDB, environment::Environment, middleware::ArbiterMiddleware};
-use futures_util::future::join_all;
-use serde::de::DeserializeOwned;
-use tokio::spawn;
+use std::{collections::VecDeque, fs::File, io::Read};
 
 use super::*;
 use crate::{
@@ -24,7 +21,7 @@ use crate::{
 /// connected to the world via a client ([`Arc<RevmMiddleware>`]) and a messager
 /// ([`Messager`]).
 #[derive(Debug)]
-pub struct World {
+pub struct World<K, V> {
   /// The identifier of the world.
   pub id: String,
 
@@ -32,20 +29,23 @@ pub struct World {
   pub agents: Option<HashMap<String, Agent>>,
 
   /// The environment for the world.
-  pub environment: Option<Environment>,
+  pub environment: Environment<K, V>,
 
   /// The messaging layer for the world.
   pub messager: Messager,
 }
 
-use std::{fs::File, io::Read};
-impl World {
+impl<
+    K: Clone + Eq + Hash + Send + Sync + 'static + DeserializeOwned,
+    V: Clone + Send + Sync + 'static + DeserializeOwned,
+  > World<K, V>
+{
   /// Creates a new [`World`] with the given identifier and provider.
   pub fn new(id: &str) -> Self {
     Self {
       id:          id.to_owned(),
       agents:      Some(HashMap::new()),
-      environment: Some(Environment::builder().build()),
+      environment: Environment::new().unwrap(),
       messager:    Messager::new(),
     }
   }
@@ -97,13 +97,13 @@ impl World {
   pub fn from_config<C: CreateStateMachine + Serialize + DeserializeOwned + Debug>(
     config_path: &str,
   ) -> Result<Self, ArbiterEngineError> {
-    let cwd = std::env::current_dir()?;
+    let cwd = std::env::current_dir().unwrap();
     let path = cwd.join(config_path);
     info!("Reading from path: {:?}", path);
-    let mut file = File::open(path)?;
+    let mut file = File::open(path).unwrap();
 
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    file.read_to_string(&mut contents).unwrap();
 
     #[derive(Deserialize)]
     struct Config<C> {
@@ -112,7 +112,7 @@ impl World {
       agents_map: HashMap<String, Vec<C>>,
     }
 
-    let config: Config<C> = toml::from_str(&contents)?;
+    let config: Config<C> = toml::from_str(&contents).unwrap();
 
     let mut world = World::new(&config.id.unwrap_or_else(|| "world".to_owned()));
 
@@ -155,13 +155,11 @@ impl World {
   /// This will add the agent defined by `agent_builder` to the world.
   pub fn add_agent(&mut self, agent_builder: AgentBuilder) {
     let id = agent_builder.id.clone();
-    let client = ArbiterMiddleware::new(self.environment.as_ref().unwrap(), Some(&id))
-      .expect("Failed to create RevmMiddleware client for agent");
+    let middleware = self.environment.middleware();
     let messager = self.messager.for_agent(&id);
     let agent =
-      agent_builder.build(client, messager).expect("Failed to build agent from AgentBuilder");
-    let agents = self.agents.as_mut().expect("Agents collection not initialized");
-    agents.insert(id.to_owned(), agent);
+      agent_builder.build(middleware, messager).expect("Failed to build agent from AgentBuilder");
+    self.agents.as_mut().unwrap().insert(id.to_owned(), agent);
   }
 
   /// Executes all agents and their behaviors concurrently within the world.
@@ -178,7 +176,7 @@ impl World {
   /// Returns an error if no agents are found in the world, possibly
   /// indicating that the world has already been run or that no agents
   /// were added prior to execution.
-  pub async fn run(&mut self) -> Result<ArbiterDB, ArbiterEngineError> {
+  pub async fn run(&mut self) -> Result<(), ArbiterEngineError> {
     let agents = match self.agents.take() {
       Some(agents) => agents,
       None =>
@@ -199,9 +197,9 @@ impl World {
     // Unwrap here is safe as we just built the dang thing.
     for (_, mut agent) in agents {
       for mut engine in agent.behavior_engines.drain(..) {
-        let client = agent.client.clone();
+        let client = agent.middleware.clone();
         let messager = messagers.pop_front().unwrap();
-        tasks.push(spawn(async move {
+        tasks.push(task::spawn(async move {
           engine.execute(MachineInstruction::Start(client, messager)).await
         }));
       }
@@ -209,7 +207,6 @@ impl World {
     // Await the completion of all tasks.
     join_all(tasks).await;
 
-    let db = self.environment.take().unwrap().stop()?;
-    Ok(db)
+    Ok(())
   }
 }

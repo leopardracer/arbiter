@@ -9,9 +9,9 @@ struct MockBehavior;
 impl Behavior<()> for MockBehavior {
   async fn startup(
     &mut self,
-    _client: Arc<ArbiterMiddleware>,
+    _client: Middleware,
     _messager: Messager,
-  ) -> Result<Option<EventStream<()>>> {
+  ) -> Result<Option<EventStream<()>>, ArbiterEngineError> {
     Ok(None)
   }
 }
@@ -19,7 +19,7 @@ impl Behavior<()> for MockBehavior {
 #[tokio::test]
 async fn behavior_no_stream() {
   trace();
-  let mut world = World::new("test");
+  let mut world = World::<String, String>::new("world");
   let behavior = MockBehavior;
   let agent = Agent::builder("agent").with_behavior(behavior);
   world.add_agent(agent);

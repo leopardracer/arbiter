@@ -9,17 +9,21 @@ use crate::world::World;
 /// [`HashMap`] of [`World`]s, but can be extended to handle generics inside of
 /// [`World`]s and crosstalk between [`World`]s.
 #[derive(Debug, Default)]
-pub struct Universe {
-  worlds:      Option<HashMap<String, World>>,
-  world_tasks: Option<Vec<Result<World, JoinError>>>,
+pub struct Universe<K, V> {
+  worlds:      Option<HashMap<String, World<K, V>>>,
+  world_tasks: Option<Vec<Result<World<K, V>, task::JoinError>>>,
 }
 
-impl Universe {
+impl<K, V> Universe<K, V>
+where
+  K: Clone + Eq + Hash + Send + Sync + DeserializeOwned + Serialize + 'static,
+  V: Clone + Send + Sync + DeserializeOwned + Serialize + 'static,
+{
   /// Creates a new [`Universe`].
   pub fn new() -> Self { Self { worlds: Some(HashMap::new()), world_tasks: None } }
 
   /// Adds a [`World`] to the [`Universe`].
-  pub fn add_world(&mut self, world: World) {
+  pub fn add_world(&mut self, world: World<K, V>) {
     if let Some(worlds) = self.worlds.as_mut() {
       worlds.insert(world.id.clone(), world);
     }
@@ -33,7 +37,7 @@ impl Universe {
     let mut tasks = Vec::new();
     // NOTE: Unwrap is safe because we checked if the universe is online.
     for (_, mut world) in self.worlds.take().unwrap().drain() {
-      tasks.push(spawn(async move {
+      tasks.push(task::spawn(async move {
         world.run().await.unwrap();
         world
       }));
@@ -53,7 +57,7 @@ mod tests {
 
   #[tokio::test]
   async fn run_universe() {
-    let mut universe = Universe::new();
+    let mut universe = Universe::<String, String>::new();
     let world = World::new("test");
     universe.add_world(world);
     universe.run_worlds().await.unwrap();
@@ -63,7 +67,7 @@ mod tests {
   #[tokio::test]
   #[should_panic(expected = "Universe is already running.")]
   async fn cant_run_twice() {
-    let mut universe = Universe::new();
+    let mut universe = Universe::<String, String>::new();
     let world1 = World::new("test");
     universe.add_world(world1);
     universe.run_worlds().await.unwrap();

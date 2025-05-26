@@ -1,15 +1,5 @@
-//! The agent module contains the core agent abstraction for the Arbiter Engine.
-
-use std::{fmt::Debug, sync::Arc};
-
-use arbiter_core::middleware::ArbiterMiddleware;
-use serde::{de::DeserializeOwned, Serialize};
-
 use super::*;
-use crate::{
-  machine::{Behavior, Engine, StateMachine},
-  messager::Messager,
-};
+use crate::machine::{Behavior, Engine, StateMachine};
 
 /// An agent is an entity capable of processing events and producing actions.
 /// These are the core actors in simulations or in onchain systems.
@@ -23,19 +13,12 @@ use crate::{
 /// `State::Processing` stage.
 #[derive(Debug)]
 pub struct Agent {
-  /// Identifier for this agent.
-  /// Used for routing messages.
   pub id: String,
 
-  /// The messager the agent uses to send and receive messages from other
-  /// agents.
   pub messager: Messager,
 
-  /// The client the agent uses to interact with the blockchain.
-  pub client: Arc<ArbiterMiddleware>,
+  pub middleware: Middleware,
 
-  /// The engines/behaviors that the agent uses to sync, startup, and process
-  /// events.
   pub(crate) behavior_engines: Vec<Box<dyn StateMachine>>,
 }
 
@@ -83,7 +66,7 @@ impl AgentBuilder {
       engines.push(Box::new(engine));
     } else {
       self.behavior_engines = Some(vec![Box::new(engine)]);
-    };
+    }
     self
   }
 
@@ -109,7 +92,7 @@ impl AgentBuilder {
       engines.push(engine);
     } else {
       self.behavior_engines = Some(vec![engine]);
-    };
+    }
     self
   }
 
@@ -148,11 +131,11 @@ impl AgentBuilder {
   /// ```
   pub fn build(
     self,
-    client: Arc<ArbiterMiddleware>,
+    middleware: Middleware,
     messager: Messager,
   ) -> Result<Agent, ArbiterEngineError> {
     match self.behavior_engines {
-      Some(engines) => Ok(Agent { id: self.id, messager, client, behavior_engines: engines }),
+      Some(engines) => Ok(Agent { id: self.id, messager, middleware, behavior_engines: engines }),
       None => Err(ArbiterEngineError::AgentBuildError("Missing behavior engines".to_owned())),
     }
   }

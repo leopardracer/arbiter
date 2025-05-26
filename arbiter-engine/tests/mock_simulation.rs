@@ -8,13 +8,13 @@ use arbiter_engine::{
   world::World,
 };
 use arbiter_macros::Behaviors;
-use futures_util::StreamExt;
+use futures::StreamExt;
 use tokio::time::timeout;
 include!("common.rs");
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn echoer() {
-  let mut world = World::new("world");
+  let mut world = World::<String, String>::new("world");
 
   let agent = Agent::builder(AGENT_ID);
   let behavior = TimedMessage::new(
@@ -50,7 +50,7 @@ async fn echoer() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn ping_pong() {
-  let mut world = World::new("world");
+  let mut world = World::<String, String>::new("world");
 
   let agent = Agent::builder(AGENT_ID);
   let behavior_ping =
@@ -83,7 +83,7 @@ async fn ping_pong() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn ping_pong_two_agent() {
-  let mut world = World::new("world");
+  let mut world = World::<String, String>::new("world");
 
   let agent_ping = Agent::builder("agent_ping");
   let agent_pong = Agent::builder("agent_pong");
@@ -124,7 +124,7 @@ enum Behaviors {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn config_test() {
-  let mut world = World::from_config::<Behaviors>("tests/config.toml").unwrap();
+  let mut world = World::<String, String>::from_config::<Behaviors>("tests/config.toml").unwrap();
   assert_eq!(world.id, "timed_message_world");
   world.run().await.unwrap();
 }

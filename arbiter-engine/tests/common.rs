@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use anyhow::Result;
-use arbiter_core::middleware::ArbiterMiddleware;
 use arbiter_engine::{
+  environment::Middleware,
+  error::ArbiterEngineError,
   machine::{Behavior, ControlFlow, EventStream},
   messager::{Message, Messager, To},
 };
@@ -47,9 +47,9 @@ impl TimedMessage {
 impl Behavior<Message> for TimedMessage {
   async fn startup(
     &mut self,
-    _client: Arc<ArbiterMiddleware>,
+    _client: Middleware,
     messager: Messager,
-  ) -> Result<Option<EventStream<Message>>> {
+  ) -> Result<Option<EventStream<Message>>, ArbiterEngineError> {
     if let Some(startup_message) = &self.startup_message {
       messager.send(To::All, startup_message).await?;
     }
@@ -57,7 +57,7 @@ impl Behavior<Message> for TimedMessage {
     Ok(Some(messager.stream()?))
   }
 
-  async fn process(&mut self, event: Message) -> Result<ControlFlow> {
+  async fn process(&mut self, event: Message) -> Result<ControlFlow, ArbiterEngineError> {
     if event.data == serde_json::to_string(&self.receive_data).unwrap() {
       let messager = self.messager.clone().unwrap();
       messager.send(To::All, self.send_data.clone()).await?;

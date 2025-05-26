@@ -11,9 +11,12 @@ async fn run_parallel() {
 
   let subscriber = fmt().with_env_filter(EnvFilter::from_default_env()).with_writer(file).finish();
 
-  tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+  tracing::subscriber::set_global_default(subscriber).expect(
+    "setting default subscriber
+failed",
+  );
 
-  let mut world1 = World::new("test1");
+  let mut world1 = World::<String, String>::new("test1");
   let agent1 = Agent::builder("agent1");
   let behavior1 =
     TimedMessage::new(1, "echo".to_owned(), "echo".to_owned(), Some(5), Some("echo".to_owned()));
