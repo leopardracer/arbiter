@@ -2,8 +2,11 @@
 
 > A Rust-based multi-agent framework.
 
-![Visitors badge](https://visitor-badge.laobi.icu/badge?page_id=arbiter)
-[![Twitter Badge](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://x.com/harnesslabs)
+<p align="center">
+  <a href="https://discord.gg/qEwPr3GMP2"><img src="https://img.shields.io/discord/1363153354338861247?style=flat&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord"></a>
+  <a href="https://x.com/harnesslabs"><img src="https://badgen.net/badge/icon/twitter?icon=twitter&label" alt="Twitter"></a>
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=arbiter" alt="Visitors">
+</p>
 
 ## Overview
 > **Arbiter** is a multi-agent framework that lets developers orchestrate event-driven simulations.
