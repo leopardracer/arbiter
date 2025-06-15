@@ -6,17 +6,33 @@ version = "0.1.0"
 
 [dependencies]
 # Error and logging
-serde     = { workspace = true }
+postage = "0.5.0"
+serde = { workspace = true }
 thiserror = { workspace = true }
-tracing   = { workspace = true }
+tokio = { version = "1.45", default-features = false, features = [
+    "sync",
+    "rt",
+    "macros",
+    # remove these later
+    "rt-multi-thread",
+    "time",
+] }
+tracing = { workspace = true }
 
-# WASM dependencies (optional)
-serde_json   = { version = "1.0", optional = true }
-wasm-bindgen = { version = "0.2", optional = true }
+# Temp, we should have a generic serialization strategy trait
+serde_json = { version = "1.0" }
 
 [dev-dependencies]
+tokio = { version = "1.45", default-features = false, features = [
+    "sync",
+    "rt",
+    "macros",
+    "time",
+] }
 tracing-test = { workspace = true }
 
 [features]
-default = []
-wasm    = ["wasm-bindgen", "serde_json"]
+default   = ["in-memory"]
+fixtures  = []
+in-memory = []
+tcp       = []

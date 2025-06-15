@@ -141,12 +141,13 @@ dependencies = [
 name = "arbiter-core"
 version = "0.1.0"
 dependencies = [
+ "postage",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
+ "tokio",
  "tracing",
  "tracing-test",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -406,6 +407,12 @@ name = "atoi_simd"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ae037714f313c1353189ead58ef9eec30a8e8dc101b2622d461418fd59e28a9"
+
+[[package]]
+name = "atomic"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c59bdb34bc650a32731b31bd8f0829cc15d24a708ee31559e0bb34f2bc320cba"
 
 [[package]]
 name = "aurora-engine-modexp"
@@ -3392,6 +3399,28 @@ dependencies = [
  "smartstring",
  "sysinfo",
  "version_check",
+]
+
+[[package]]
+name = "pollster"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da3b0203fd7ee5720aa0b5e790b591aa5d3f41c3ed2c34a3a393382198af2f7"
+
+[[package]]
+name = "postage"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af3fb618632874fb76937c2361a7f22afd393c982a2165595407edc75b06d3c1"
+dependencies = [
+ "atomic",
+ "crossbeam-queue",
+ "log",
+ "parking_lot",
+ "pin-project",
+ "pollster",
+ "static_assertions",
+ "thiserror 1.0.59",
 ]
 
 [[package]]
