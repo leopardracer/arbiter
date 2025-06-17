@@ -137,9 +137,9 @@ async fn bencher<M: Middleware + 'static>(client: Arc<M>, label: &str) -> BenchD
 
   // Call `mint` `NUM_LOOP_STEPS` times on `ArbiterToken` and tally up how long
   // this takes.
-  let statefull_call_duration =
+  let stateful_call_duration =
     stateful_call_loop(arbiter_token, client.default_sender().unwrap(), label).await;
-  total_stateful_call_duration += statefull_call_duration.as_micros();
+  total_stateful_call_duration += stateful_call_duration.as_micros();
 
   BenchDurations {
     deploy:         Duration::from_micros(total_deploy_duration as u64),
